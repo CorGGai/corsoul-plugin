@@ -1,0 +1,8 @@
+{
+  "name": "corsoul-memory",
+  "description": "4-layer cognitive long-term memory for Claude Code. Free, offline, local. Bundles the corsoul_* MCP tools and a skill that has the model recall on task entry and store durable facts as it learns them.",
+  "version": "0.1.0",
+  "author": { "name": "CorSoul-AI", "url": "https://github.com/CorGGai" },
+  "homepage": "https://github.com/CorGGai/CorSoul-AI",
+  "license": "MIT"
+}
