@@ -1,9 +1,12 @@
 {
   "name": "corsoul",
-  "owner": { "name": "CorSoul-AI", "url": "https://github.com/CorGGai" },
+  "owner": {
+    "name": "CorSoul-AI",
+    "url": "https://github.com/CorGGai"
+  },
   "metadata": {
     "description": "Corsoul cognitive memory plugins for Claude Code.",
-    "version": "0.1.1"
+    "version": "0.1.2"
   },
   "plugins": [
     {
