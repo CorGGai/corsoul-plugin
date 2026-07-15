@@ -21,6 +21,21 @@ embeddings provider; without one, recall is keyword-only — run
 > on npm — the MCP server runs via `npx` with nothing to install first. (To try an unpublished local
 > change, see **Local testing** below.)
 
+## Versioning (plugin vs. engine)
+
+This **plugin** (the marketplace wrapper: `.mcp.json` + skills) and the **`corsoul` engine** (the npm
+package the MCP server runs) are two independent tracks — a plugin release does not imply a matching
+engine release, or vice versa. The plugin keeps its own SemVer for shell/skill/config changes; each
+plugin release **pins** the exact engine it ships (in `.mcp.json`), and that pinned version is also
+shown in the plugin description Claude Code displays. Don't expect the two numbers to match.
+
+| Plugin (this repo) | Pins engine (`corsoul` on npm) |
+|---|---|
+| **0.1.3** | `corsoul@0.1.5` |
+| 0.1.2 | `corsoul@0.1.5` |
+| 0.1.1 | floating latest (unpinned) |
+| 0.1.0 | floating latest (unpinned) |
+
 ## What you get (two components)
 
 | Component | File | What it does |
