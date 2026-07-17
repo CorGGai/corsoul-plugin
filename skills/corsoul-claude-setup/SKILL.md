@@ -33,12 +33,17 @@ reserve `claude-code:all:v1` for genuinely cross-project preferences.
 
 ```md
 <!-- corsoul-plugin:claude-block:start -->
-<!-- corsoul-plugin:block-version: 1 -->
+<!-- corsoul-plugin:block-version: 2 -->
 ## Corsoul durable memory
 
 - Use scope `{{SCOPE}}` for every `corsoul_*` call in this project. Never guess other scopes.
 - At the start of each task, if Corsoul tools are available, call `corsoul_recall` before relying
   on context from prior work. Do it silently.
+- When creating or editing any scheduled, recurring, or background task prompt (cron, Cowork
+  schedule, /loop, CI job), write the memory wiring into that prompt on the user's behalf: it must
+  open with `corsoul_recall` (scope `{{SCOPE}}`) for the task's topic and close with
+  `corsoul_remember` of durable outcomes. Scheduled sessions run isolated — this file may not load
+  there, so the prompt itself must carry the wiring.
 - Call `corsoul_remember` only for durable decisions, preferences, verified outcomes, constraints,
   and blockers — one distilled fact per call, never transcripts or routine command history.
 - Never store credentials, tokens, private keys, personal data, raw private documents, or full logs.
