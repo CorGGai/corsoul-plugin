@@ -31,7 +31,8 @@ shown in the plugin description Claude Code displays. Don't expect the two numbe
 
 | Plugin (this repo) | Pins engine (`corsoul` on npm) |
 |---|---|
-| **0.1.3** | `corsoul@0.1.5` |
+| **0.1.4** | `corsoul@0.1.7` (single-owner election — fixes multi-session WASM `Aborted()` crashes; scheduled-task memory wiring clause in claude-setup block v2) |
+| 0.1.3 | `corsoul@0.1.5` |
 | 0.1.2 | `corsoul@0.1.5` |
 | 0.1.1 | floating latest (unpinned) |
 | 0.1.0 | floating latest (unpinned) |
