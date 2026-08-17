@@ -122,6 +122,11 @@ To try the plugin without going through the marketplace:
 
 ## Notes
 
+- **This repo is generated — do not edit it directly.** The plugin's source of truth is
+  `corsoul-plugin/` in the engine repo, which is also what that repo's tests read; publish with
+  `npm run sync:plugin` there, then commit and push here. The two copies were hand-edited in
+  parallel once and drifted for weeks in both directions: the installers here went on installing
+  a superseded engine while the tests over there stayed green on bytes nobody had installed.
 - **Validate before publishing:** run `claude plugin validate` in this directory.
 - **`npx` cold start:** the MCP server starts once per session (cached after first `npx` fetch). For
   lower latency, install `corsoul` globally.
