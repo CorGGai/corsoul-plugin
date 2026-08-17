@@ -2,9 +2,18 @@
 
 Persistent **local long-term memory** for Claude Code — the free, MIT L0/L1 objective-memory tier
 of the Corsoul cognitive memory system (an embedded PGLite store under `~/.corsoul/db`). One
-install gives Claude Code memory that survives across sessions. The L2/L3 associative graph,
+install gives Claude Code the `corsoul_*` memory tools; the model calls them to store and recall,
+so what it saves persists across sessions (verify it: tell it a durable fact, start a new session,
+then recall). The L2/L3 associative graph,
 consolidation, and personality layers belong to the licensed engine and are not part of this
 free plugin.
+
+**One brain, many agents.** The store this plugin opens is *your* one brain — every other agent you
+connect (Codex, Cursor, an HTTP gateway, more Claude Code windows) plugs into the same memory and
+grows it. Concurrent sessions on one store are safe by design: since `corsoul@0.1.7` a single-owner
+election makes the first session own the store and every later one bridge to it transparently — the
+config says stdio, the semantics are a shared brain. Keep agents apart with different `scope_id`s
+(logical isolation); a separate data dir is only for deliberately isolated brains.
 
 ## Install
 
@@ -79,11 +88,20 @@ recall-before / capture-after floor without the multi-process hazard. Hook wirin
 ## Scope (which memory namespace)
 
 Memory is namespaced by `scope_id`. The skill resolves it deterministically: a user-pinned scope
-wins; an existing scope with memories is kept as-is (continuity beats convention); otherwise new
-projects get `claude-code:project:<normalized-name>:v1` (directory name lowercased, non-alphanumeric
-runs → `-`, trimmed) plus `claude-code:all:v1` for genuinely cross-project preferences. Set
-`CORSOUL_SCOPE` in your environment if you want to pin one explicitly (the legacy `CORTEX_SCOPE` is
-still honored); the skill tells the model to reuse it.
+wins; an existing scope with memories is kept as-is (continuity beats convention); otherwise
+**`local:memory`** — one memory shared by every project and every agent, which is the whole point of
+the product. Which project or tool a fact came from is recorded on the fact (`source`), so nothing
+is lost by sharing the scope. Separate scopes cannot see each other at all and are a billed resource
+(1 on the free plan, up to 30), so they are a deliberate choice — a domain under your memory, such as
+`<account>:memory:work` — not something derived from a directory name.
+
+Set `CORSOUL_SCOPE` in your environment if you want to pin one explicitly (the legacy `CORTEX_SCOPE`
+is still honored); the skill tells the model to reuse it.
+
+> Earlier versions derived `claude-code:project:<name>:v1` per directory. Those scopes keep working
+> and the skill will not move them. `claude-code` is a reserved namespace, so no account can claim
+> it — the same protection `local` has, and for the same reason: every plugin user's memories are
+> already under it.
 
 ## Local testing (optional)
 

@@ -33,6 +33,15 @@ corsoul_remember(scope_id=<scope>, text=<the fact, DISTILLED to ONE clean statem
 One fact per call. Store **conclusions, not chatter** — don't log the turn word-for-word, and don't
 re-store what a recall just returned.
 
+**Durable facts YOU establish count too.** If your reply creates something meant to persist across
+sessions — a name you pick for yourself, an identity, a working convention — call `corsoul_remember`
+**before** sending the reply that establishes it. Don't treat "the user didn't say it" as "not worth
+storing": a fact born in your own answer is lost the moment the session ends unless you write it.
+
+**Never claim a fact is remembered unless the write succeeded.** Only an `ok: true` from
+`corsoul_remember` counts. If the write fails or memory is unavailable, say plainly that it was NOT
+stored — a persistence promise that didn't happen is worse than no promise.
+
 ## If a response carries `due_now` — notice, don't auto-execute
 
 A remember/recall response may include a `due_now` block (prospective intents whose time has come).
@@ -59,16 +68,21 @@ Resolve the scope in this order — first match wins:
 1. If the user (or a rule in their `CLAUDE.md`) has pinned a scope, use **that exact value**, verbatim,
    in every call — it is the single source of truth.
 2. If this project already has memories under an existing scope (e.g. an earlier
-   `claude-code:<project-name>` id), **keep using that exact id** — continuity beats convention.
+   `claude-code:project:<name>:v1` id), **keep using that exact id** — continuity beats convention.
    Never migrate or rename a scope on your own.
-3. Otherwise derive ONE stable id: `claude-code:project:<normalized-name>:v1`, where
-   `<normalized-name>` is the repository (or workspace-root) directory name, lowercased, with every
-   run of non-alphanumeric characters replaced by `-` and leading/trailing `-` trimmed. The same
-   project must always normalize to the same scope.
+3. Otherwise use **`local:memory`** — the standard starting scope for a device that has not been
+   upgraded to an account. One memory, shared by every agent and every project.
 
-For genuinely cross-project user preferences and decisions (response language, coding style,
-workflow rules), use the shared scope `claude-code:all:v1` — and only for facts that really apply
-everywhere. Do not mix project-specific facts into it.
+**Why one scope and not one per project.** The product is a single memory that every AI tool plugs
+into, and separate scopes cannot see each other *at all* — no recall across them, and a
+contradiction between two of them can never be noticed. Which project a fact came from is recorded
+on the fact itself (its `source` label), so nothing is lost by sharing the scope, while splitting it
+loses the connections that make the memory worth having. A separate scope is also a billed
+resource: plans allow 1 (free) to 30 of them, so deriving one per directory would exhaust a free
+plan at the second project.
+
+If the user genuinely wants one project kept apart, that is a **domain under their memory** —
+`<account>:memory:work` — and it is their decision to make, not one to derive from a directory name.
 
 - **Never guess or try alternative scope ids.** If a `corsoul_recall` comes back empty, say so plainly
   ("I don't have that stored yet") — do NOT go fishing through other scopes. Fishing fragments memory
