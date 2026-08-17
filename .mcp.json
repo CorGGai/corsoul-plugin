@@ -2,7 +2,7 @@
   "mcpServers": {
     "corsoul": {
       "command": "npx",
-      "args": ["-y", "--package=corsoul@0.1.7", "corsoul"]
+      "args": ["-y", "--package=corsoul@0.1.12", "corsoul"]
     }
   }
 }

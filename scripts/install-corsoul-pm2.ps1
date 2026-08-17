@@ -4,7 +4,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$CorsoulVersion = '0.1.5'
+$CorsoulVersion = '0.1.12'
 $Pm2Version = '7.0.3'
 $ProcessName = 'corsoul-mcp'
 $HealthUrl = 'http://127.0.0.1:3848/health'
@@ -21,10 +21,10 @@ function Invoke-Pm2 {
   if ($LASTEXITCODE -ne 0) { throw "pm2 failed with exit code $LASTEXITCODE" }
 }
 
-if (-not (Get-Command node.exe -ErrorAction SilentlyContinue)) { throw 'Node.js 18 or newer is required.' }
+if (-not (Get-Command node.exe -ErrorAction SilentlyContinue)) { throw 'Node.js 22 or newer is required.' }
 if (-not (Get-Command npm.cmd -ErrorAction SilentlyContinue)) { throw 'npm is required.' }
 $nodeMajor = [int]((& node.exe --version).TrimStart('v').Split('.')[0])
-if ($nodeMajor -lt 18) { throw 'Node.js 18 or newer is required.' }
+if ($nodeMajor -lt 22) { throw 'Node.js 22 or newer is required.' }
 
 try {
   $health = Invoke-RestMethod -Uri $HealthUrl -TimeoutSec 2
@@ -57,16 +57,41 @@ Invoke-Npm install --global --no-audit --no-fund "corsoul@$CorsoulVersion" "pm2@
 
 $globalRoot = (& npm.cmd root --global).Trim()
 if ($LASTEXITCODE -ne 0 -or -not $globalRoot) { throw 'Unable to resolve the global npm package directory.' }
-$serverScript = Join-Path $globalRoot 'corsoul\bin\cortex-mcp-local.js'
+$serverScript = Join-Path $globalRoot 'corsoul\bin\corsoul-mcp-local.js'
 if (-not (Test-Path -LiteralPath $serverScript)) { throw "Corsoul server entrypoint not found: $serverScript" }
 
 & pm2.cmd describe $ProcessName *> $null
 if ($LASTEXITCODE -eq 0) { Invoke-Pm2 delete $ProcessName }
 
+# Supervision policy (crash-loop backoff, restart ceiling, and "exit code 78 means stop, do not
+# relaunch") — asked of the installed client, which asks THIS machine's pm2 what it understands.
+# Never a second hand-written list in shell: the list belongs to the server's exit code, and two
+# copies drift. Nothing here may cost an install, so an older client / no pm2 / an unreadable answer
+# all end as an empty list = exactly the line that shipped before, and the list is validated and
+# dropped WHOLE because one token pm2 does not recognise makes it reject the entire start.
+$harden = @()
+$pm2ArgsJs = Join-Path (Split-Path (Split-Path $serverScript -Parent) -Parent) 'scripts\pm2-args.mjs'
+if (Test-Path -LiteralPath $pm2ArgsJs) {
+  $prevEap = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    $raw = @(& node.exe $pm2ArgsJs | ForEach-Object { "$_".Trim() } | Where-Object { $_ -ne '' })
+    if ($raw.Count -gt 0 -and -not ($raw | Where-Object { $_ -notmatch '^(--[a-z][a-z0-9-]+|[0-9]+)$' })) { $harden = $raw }
+  } catch { $harden = @() } finally { $ErrorActionPreference = $prevEap }
+}
+
 $savedDatabaseUrl = $env:DATABASE_URL
 Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue
+# Transport/host/port go through the environment rather than `-- --transport=...`. PowerShell
+# consumes a bare `--` while binding parameters, so passing one through a FUNCTION never reaches
+# pm2: measured on pm2 7.0.3, the launch died with ``error: unknown option `--transport' `` and this
+# installer threw. The sibling start-corsoul-brain.ps1 has always configured the server this way and
+# its header says why; this file is the one that did not get the memo.
+$env:CORSOUL_MCP_TRANSPORT = 'http'
+$env:CORSOUL_MCP_HOST = '127.0.0.1'
+$env:CORSOUL_MCP_PORT = '3848'
 try {
-  Invoke-Pm2 start $serverScript --name $ProcessName --interpreter node -- --transport=http --host=127.0.0.1 --port=3848
+  Invoke-Pm2 start $serverScript --name $ProcessName --interpreter node @harden
   Invoke-Pm2 save
 } finally {
   if ($null -ne $savedDatabaseUrl) { Set-Item -Path Env:DATABASE_URL -Value $savedDatabaseUrl }

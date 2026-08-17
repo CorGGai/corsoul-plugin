@@ -65,7 +65,7 @@ shared loopback HTTP owner**:
 For a temporary foreground owner instead (no startup changes):
 
 ```text
-npx -y --package=corsoul@0.1.7 corsoul --transport=http --host=127.0.0.1 --port=3848
+npx -y --package=corsoul@0.1.12 corsoul --transport=http --host=127.0.0.1 --port=3848
 ```
 
 ## Duplicate servers
