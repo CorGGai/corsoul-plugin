@@ -40,7 +40,8 @@ shown in the plugin description Claude Code displays. Don't expect the two numbe
 
 | Plugin (this repo) | Pins engine (`corsoul` on npm) |
 |---|---|
-| **0.2.0** | `corsoul@0.1.12` (PM2 installers repaired — they had kept installing `corsoul@0.1.5` and looking for the server entrypoint under its pre-rename filename, and on Windows the launch line never reached PM2 at all. Node 22 is now the stated floor.) |
+| **0.3.0** | `corsoul@0.1.19` (a session bridged to the shared owner is served with its own declared scope and label, not the first session's, and closing a session releases the store; `corsoul_peek` / `corsoul_copy` and the cross-scope gate (`corsoul grant`); `connect http` writes `"type": "http"` and the scope and label headers, which a 0.1.19 owner reads. PM2 helpers: the service is stopped gracefully on Windows, and the Windows helper pins a data dir named in its shell machine-wide with `corsoul pin-store`. A `corsoul-mcp` that is already running is left as it is — the helpers exit early — so it keeps the engine it was installed with. Node 22 floor unchanged.) |
+| 0.2.0 | `corsoul@0.1.12` (PM2 installers repaired — they had kept installing `corsoul@0.1.5` and looking for the server entrypoint under its pre-rename filename, and on Windows the launch line never reached PM2 at all. Node 22 is now the stated floor.) |
 | 0.1.4 | `corsoul@0.1.7` (single-owner election — fixes multi-session WASM `Aborted()` crashes; scheduled-task memory wiring clause in claude-setup block v2) |
 | 0.1.3 | `corsoul@0.1.5` |
 | 0.1.2 | `corsoul@0.1.5` |
@@ -69,9 +70,9 @@ So the shipped plugin keeps **exactly one process** touching the store — the M
 recall/capture through the model's tool calls (the skill). This is the honest, safe default. The
 tradeoff: capture is model-driven (high-signal but skippable) rather than a deterministic floor.
 
-**The same hazard applies to concurrent Claude Code sessions.** Each session spawns its own stdio
-server; several sessions (windows, worktrees, background agents) against the same store are multiple
-PGLite processes. If you work that way, switch to **one shared loopback HTTP owner**: run the opt-in
+**Concurrent Claude Code sessions used to hit the same hazard; since `corsoul@0.1.7` they do not.** Each session spawns its own stdio
+server, but single-owner election makes the first one the sole opener of the store and every later one
+a thin bridge to it, so exactly one process opens the data dir however many sessions you run. Nothing to configure. What is still worth doing deliberately is making that owner **outlive any one session** — so it survives reboots and is restarted if it dies. That is the opt-in
 PM2 helper in `scripts/` (or a temporary foreground `corsoul --transport=http`), then point your
 project `.mcp.json` at `http://127.0.0.1:3848/mcp` (`type: http`). The `corsoul-connect` skill walks
 the model through diagnosing this and proposing the switch — it never changes your machine without
@@ -124,7 +125,8 @@ To try the plugin without going through the marketplace:
 
 - **This repo is generated — do not edit it directly.** The plugin's source of truth is
   `corsoul-plugin/` in the engine repo, which is also what that repo's tests read; publish with
-  `npm run sync:plugin` there, then commit and push here. The two copies were hand-edited in
+  `npm run sync:plugin` there to see the plan and `npm run sync:plugin -- --apply` to carry it
+  out, then commit and push here. The two copies were hand-edited in
   parallel once and drifted for weeks in both directions: the installers here went on installing
   a superseded engine while the tests over there stayed green on bytes nobody had installed.
 - **Validate before publishing:** run `claude plugin validate` in this directory.

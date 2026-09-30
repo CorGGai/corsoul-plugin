@@ -4,7 +4,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$CorsoulVersion = '0.1.12'
+$CorsoulVersion = '0.1.19'
 $Pm2Version = '7.0.3'
 $ProcessName = 'corsoul-mcp'
 $HealthUrl = 'http://127.0.0.1:3848/health'
@@ -105,6 +105,23 @@ for ($i = 0; $i -lt 30; $i++) {
   Start-Sleep -Seconds 1
 }
 if (-not $healthy) { throw "PM2 started $ProcessName, but $HealthUrl did not become healthy. Run: pm2 logs $ProcessName" }
+
+# 0.1.19-C5 (0118a:unnamed-1): pin this store machine-wide once the service answers. pm2 takes this shell's whole
+# environment into the service's definition, so a CORTEX_DATA_DIR or CORSOUL_DATA_DIR set in this shell pinned only the
+# SERVICE to its store, while every other process on the machine (agent sessions, the console, backup) reads
+# ~/.cortex/mcp-local.env and opened the default one. `corsoul pin-store` writes the same pin into that file with the
+# rule upgrade uses (never over another pin, never for Postgres). Only when this shell names a store, and only for a
+# client that has the command (0.1.19 and later): an older one reads `pin-store` as no subcommand and runs a server.
+# Called directly, NOT piped: through a PowerShell 5.1 pipe its UTF-8 sentence is re-decoded with the console code page.
+$shellDataDir = if ($env:CORTEX_DATA_DIR) { $env:CORTEX_DATA_DIR } elseif ($env:CORSOUL_DATA_DIR) { $env:CORSOUL_DATA_DIR } else { '' }
+if ($shellDataDir) {
+  $localMcp = Join-Path (Split-Path (Split-Path $serverScript -Parent) -Parent) 'dist\lean\local-mcp.js'
+  if ((Test-Path -LiteralPath $localMcp) -and (Select-String -LiteralPath $localMcp -SimpleMatch -Quiet -Pattern "subcommand === 'pin-store'")) {
+    & node.exe $serverScript pin-store "--data-dir=$shellDataDir" '--port=3848'
+  } else {
+    Write-Warning "This shell sets the data dir to $shellDataDir, which only the $ProcessName service sees. corsoul@$CorsoulVersion cannot pin it machine-wide: add CORTEX_DATA_DIR=$shellDataDir to ~/.cortex/mcp-local.env yourself."
+  }
+}
 
 if (-not $SkipStartup) {
   Write-Host 'Installing the Windows PM2 login-startup hook...'

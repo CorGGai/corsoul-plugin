@@ -48,15 +48,26 @@ shared loopback HTTP owner**:
    already bound to the port. Resolve the actual plugin path first; never run it merely because
    the plugin is installed.
 
-2. Point Claude Code at the shared owner instead of the stdio spawn — in the project (or user)
-   `.mcp.json`:
+2. Point Claude Code at the shared owner with `corsoul connect`, not with a hand-written entry. An
+   entry that holds only a `url` declares nothing: the owner cannot tell which memory this channel
+   belongs to or which agent is writing. `connect` writes both, as two headers. Preview first, show
+   the user the output, and write only after they confirm:
 
-   ```json
-   { "mcpServers": { "corsoul": { "type": "http", "url": "http://127.0.0.1:3848/mcp" } } }
+   ```text
+   npx -y corsoul@latest connect http --url=http://127.0.0.1:3848/mcp --config=.mcp.json --scope=<scope> --label=claude-code --dry-run
    ```
 
-   A project-level entry overrides the plugin's stdio server for that project. Show the user this
-   config; do not write it without confirmation. Restart the session afterward.
+   `<scope>` is the one this project's memories already use (the memory skill's rule; `local:memory`
+   on a device that has not been upgraded). Declaring it also limits this channel to that scope.
+   Then run the same command without `--dry-run`. It writes an entry named `cortex` into the
+   project's `.mcp.json` (`--config=~/.claude.json` instead covers every project) with
+   `"type": "http"`, the url and the two headers; re-running it keeps any other key already in that
+   entry and names any header it removes. This needs corsoul 0.1.19 or later: an older `connect`
+   writes the entry without `"type"`, which Claude Code rejects as a configuration error.
+
+   The plugin's own `corsoul` server is a stdio command, a different endpoint from this url, so
+   Claude Code keeps both and the tools appear twice — see "Duplicate servers" below. Restart the
+   session afterward.
 
 3. Verify: `/health` responds, a `corsoul_recall` round-trips, and only ONE process owns the
    PGLite directory. The free HTTP server has no auth — it must stay on `127.0.0.1`; loopback is
@@ -65,7 +76,7 @@ shared loopback HTTP owner**:
 For a temporary foreground owner instead (no startup changes):
 
 ```text
-npx -y --package=corsoul@0.1.12 corsoul --transport=http --host=127.0.0.1 --port=3848
+npx -y --package=corsoul@0.1.19 corsoul --transport=http --host=127.0.0.1 --port=3848
 ```
 
 ## Duplicate servers
@@ -73,7 +84,10 @@ npx -y --package=corsoul@0.1.12 corsoul --transport=http --host=127.0.0.1 --port
 If the user also has a manual `cortex` or `corsoul` MCP entry (from `corsoul connect claude-code`
 or hand-editing) alongside this plugin, tools appear twice and two stdio processes can contend for
 the store. Keep exactly one connection: verify the plugin works, then recommend removing the
-duplicate entry. Never edit or delete the user's configuration without explicit confirmation.
+duplicate entry. The exception is the shared-owner shape above: there, keep the `cortex` HTTP entry
+and turn the plugin's `corsoul` server off for that project (Claude Code's per-project
+`disabledMcpServers` list covers plugin servers). Never edit or delete the user's configuration
+without explicit confirmation.
 
 ## Verify without polluting memory
 

@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "Corsoul cognitive memory plugins for Claude Code.",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "plugins": [
     {
       "name": "corsoul-memory",
       "source": "./",
-      "description": "4-layer cognitive long-term memory: corsoul_* MCP tools + a recall/capture skill. Free, offline, local. Runtime engine: corsoul 0.1.12."
+      "description": "4-layer cognitive long-term memory: corsoul_* MCP tools + a recall/capture skill. Free, offline, local. Runtime engine: corsoul 0.1.19."
     }
   ]
 }

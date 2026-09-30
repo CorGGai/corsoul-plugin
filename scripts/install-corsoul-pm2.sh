@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-CORSOUL_VERSION=0.1.12
+CORSOUL_VERSION=0.1.19
 PM2_VERSION=7.0.3
 PROCESS_NAME=corsoul-mcp
 HEALTH_URL=http://127.0.0.1:3848/health
