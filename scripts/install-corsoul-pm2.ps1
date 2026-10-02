@@ -4,7 +4,14 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$CorsoulVersion = '0.1.19'
+
+# npm.cmd, pm2.cmd and pm2-startup.cmd below are batch files that cmd.exe runs, and the `node` each of them starts is looked
+# up by cmd.exe in the CURRENT directory before PATH -- unless this is set. Set for this process only; what it starts
+# inherits it, and `pm2 start` writes it into the service's pm2 definition, so the service's own cmd.exe children skip the
+# current directory too. (The same line opens the engine's start-corsoul-brain.ps1.)
+$env:NoDefaultCurrentDirectoryInExePath = '1'
+
+$CorsoulVersion = '0.1.20'
 $Pm2Version = '7.0.3'
 $ProcessName = 'corsoul-mcp'
 $HealthUrl = 'http://127.0.0.1:3848/health'
@@ -35,8 +42,8 @@ try {
         Write-Host "Corsoul is already healthy and managed as $ProcessName."
         Invoke-Pm2 save
         if (-not $SkipStartup) {
-          Write-Host 'Ensuring the Windows PM2 login-startup hook is installed...'
-          Invoke-Npm install --global --no-audit --no-fund pm2-windows-startup
+          Write-Host 'Ensuring the Windows PM2 login-startup hook is installed: pm2-windows-startup@1.0.3 (global npm package) ...'
+          Invoke-Npm install --global --no-audit --no-fund pm2-windows-startup@1.0.3
           & pm2-startup.cmd install
           if ($LASTEXITCODE -ne 0) { throw 'PM2 is supervising Corsoul now, but the Windows startup hook failed. Run pm2-startup install manually, then pm2 save.' }
           Invoke-Pm2 save
@@ -106,7 +113,7 @@ for ($i = 0; $i -lt 30; $i++) {
 }
 if (-not $healthy) { throw "PM2 started $ProcessName, but $HealthUrl did not become healthy. Run: pm2 logs $ProcessName" }
 
-# 0.1.19-C5 (0118a:unnamed-1): pin this store machine-wide once the service answers. pm2 takes this shell's whole
+# Pin this store machine-wide once the service answers. pm2 takes this shell's whole
 # environment into the service's definition, so a CORTEX_DATA_DIR or CORSOUL_DATA_DIR set in this shell pinned only the
 # SERVICE to its store, while every other process on the machine (agent sessions, the console, backup) reads
 # ~/.cortex/mcp-local.env and opened the default one. `corsoul pin-store` writes the same pin into that file with the
@@ -118,14 +125,20 @@ if ($shellDataDir) {
   $localMcp = Join-Path (Split-Path (Split-Path $serverScript -Parent) -Parent) 'dist\lean\local-mcp.js'
   if ((Test-Path -LiteralPath $localMcp) -and (Select-String -LiteralPath $localMcp -SimpleMatch -Quiet -Pattern "subcommand === 'pin-store'")) {
     & node.exe $serverScript pin-store "--data-dir=$shellDataDir" '--port=3848'
+    # It exits 1 when it pins nothing (another pin is already there, the path cannot be written as it is, or the file names a
+    # Postgres store); its own lines above say which. Not a reason to undo the install -- the service is running -- but not
+    # one to pass over either.
+    if ($LASTEXITCODE -ne 0) {
+      Write-Warning "corsoul pin-store did not pin $shellDataDir (exit code $LASTEXITCODE; the lines above say why). Until it is pinned, only the $ProcessName service sees this data dir: add CORTEX_DATA_DIR=$shellDataDir to ~/.cortex/mcp-local.env yourself if every process should open it."
+    }
   } else {
     Write-Warning "This shell sets the data dir to $shellDataDir, which only the $ProcessName service sees. corsoul@$CorsoulVersion cannot pin it machine-wide: add CORTEX_DATA_DIR=$shellDataDir to ~/.cortex/mcp-local.env yourself."
   }
 }
 
 if (-not $SkipStartup) {
-  Write-Host 'Installing the Windows PM2 login-startup hook...'
-  Invoke-Npm install --global --no-audit --no-fund pm2-windows-startup
+  Write-Host 'Installing the Windows PM2 login-startup hook: pm2-windows-startup@1.0.3 (global npm package) ...'
+  Invoke-Npm install --global --no-audit --no-fund pm2-windows-startup@1.0.3
   & pm2-startup.cmd install
   if ($LASTEXITCODE -ne 0) { throw 'PM2 is supervising Corsoul now, but the Windows startup hook failed. Run pm2-startup install manually, then pm2 save.' }
   Invoke-Pm2 save

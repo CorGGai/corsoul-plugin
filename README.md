@@ -40,7 +40,8 @@ shown in the plugin description Claude Code displays. Don't expect the two numbe
 
 | Plugin (this repo) | Pins engine (`corsoul` on npm) |
 |---|---|
-| **0.3.0** | `corsoul@0.1.19` (a session bridged to the shared owner is served with its own declared scope and label, not the first session's, and closing a session releases the store; `corsoul_peek` / `corsoul_copy` and the cross-scope gate (`corsoul grant`); `connect http` writes `"type": "http"` and the scope and label headers, which a 0.1.19 owner reads. PM2 helpers: the service is stopped gracefully on Windows, and the Windows helper pins a data dir named in its shell machine-wide with `corsoul pin-store`. A `corsoul-mcp` that is already running is left as it is — the helpers exit early — so it keeps the engine it was installed with. Node 22 floor unchanged.) |
+| **0.4.0** | `corsoul@0.1.20` (the plugin's server now labels what it writes: `.mcp.json` sets `CORTEX_MCP_SOURCE=claude-code` — the value `corsoul connect claude-code` writes — so memories stored through the plugin are recorded as coming from `self:claude-code`. Engine: recalled and peeked text is marked as stored data, not instructions; a Postgres store that stops answering fails the tool call in under half a minute and names the store, instead of hanging until the agent gives up; on Windows a program corsoul starts through cmd.exe is the one on PATH, never a same-named file in the current folder; the process that serves a shared store issues a per-user owner token that 0.1.20 sessions send — not required unless an http service sets `CORSOUL_HTTP_REQUIRE_TOKEN=1`, which then refuses older sessions and consoles. PM2 helpers: the Windows helper turns that current-folder lookup off for itself and for the service it starts, installs `pm2-windows-startup@1.0.3` by name, and warns when `corsoul pin-store` pins nothing. A `corsoul-mcp` that is already running is left as it is. Node 22 floor unchanged.) |
+| 0.3.0 | `corsoul@0.1.19` (a session bridged to the shared owner is served with its own declared scope and label, not the first session's, and closing a session releases the store; `corsoul_peek` / `corsoul_copy` and the cross-scope gate (`corsoul grant`); `connect http` writes `"type": "http"` and the scope and label headers, which a 0.1.19 owner reads. PM2 helpers: the service is stopped gracefully on Windows, and the Windows helper pins a data dir named in its shell machine-wide with `corsoul pin-store`. A `corsoul-mcp` that is already running is left as it is — the helpers exit early — so it keeps the engine it was installed with. Node 22 floor unchanged.) |
 | 0.2.0 | `corsoul@0.1.12` (PM2 installers repaired — they had kept installing `corsoul@0.1.5` and looking for the server entrypoint under its pre-rename filename, and on Windows the launch line never reached PM2 at all. Node 22 is now the stated floor.) |
 | 0.1.4 | `corsoul@0.1.7` (single-owner election — fixes multi-session WASM `Aborted()` crashes; scheduled-task memory wiring clause in claude-setup block v2) |
 | 0.1.3 | `corsoul@0.1.5` |
@@ -52,7 +53,7 @@ shown in the plugin description Claude Code displays. Don't expect the two numbe
 
 | Component | File | What it does |
 |---|---|---|
-| **MCP server** | `.mcp.json` | Registers `corsoul` (stdio) → the `corsoul_*` tools: `remember` / `recall` / `forget` / `intend` / `due` / `resolve_intent` / `set_core` / `get_core`. |
+| **MCP server** | `.mcp.json` | Registers `corsoul` (stdio) → the `corsoul_*` tools: `remember` / `recall` / `peek` / `copy` / `forget` / `intend` / `due` / `resolve_intent` / `set_core` / `get_core`. |
 | **Memory skill** | `skills/corsoul-memory/SKILL.md` | Tells the model to **recall on task entry** and **store durable facts** as it learns them — recall and capture are tool-driven. |
 | **Connect skill** | `skills/corsoul-connect/SKILL.md` | Diagnoses a broken/missing connection, resolves duplicate servers, and guides the **shared HTTP owner** upgrade for concurrent sessions. |
 | **PM2 helpers** | `scripts/install-corsoul-pm2.{ps1,sh}` | Opt-in, reviewed installers for a persistent loopback owner (`corsoul-mcp` on `127.0.0.1:3848`) with crash + reboot recovery. Never started automatically. |
@@ -112,7 +113,8 @@ To try the plugin without going through the marketplace:
    ```bash
    npm i -g corsoul
    ```
-2. In `.mcp.json`, temporarily replace `npx -y --package=corsoul corsoul` with just `corsoul`.
+2. In `.mcp.json`, temporarily set `"command": "corsoul"` and remove `"args"` (the entry otherwise runs
+   `npx -y --package=corsoul@0.1.20 corsoul`). Keep the `env` block, so local runs are labelled the same way.
 3. Load the plugin directly from this folder:
    ```bash
    claude --plugin-dir .

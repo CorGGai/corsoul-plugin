@@ -12,7 +12,7 @@ and the wrong shape for several concurrent ones.
 
 1. If `corsoul_*` tools are absent entirely: the plugin's MCP server failed to start. Most common
    causes, in order — `npx` cannot resolve the pinned `corsoul` version (check network/registry),
-   Node.js older than 18, or a corrupted npx cache (`npx clear-npx-cache` equivalent: remove the
+   Node.js older than 22, or a corrupted npx cache (`npx clear-npx-cache` equivalent: remove the
    `_npx` folder under the npm cache). Have the user restart the Claude Code session after fixing.
 2. If tools exist but calls fail: distinguish the store from the provider.
    - Store errors mentioning the data directory or locks → suspect **another process owning the
@@ -76,7 +76,7 @@ shared loopback HTTP owner**:
 For a temporary foreground owner instead (no startup changes):
 
 ```text
-npx -y --package=corsoul@0.1.19 corsoul --transport=http --host=127.0.0.1 --port=3848
+npx -y --package=corsoul@0.1.20 corsoul --transport=http --host=127.0.0.1 --port=3848
 ```
 
 ## Duplicate servers

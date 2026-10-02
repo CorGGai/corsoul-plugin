@@ -2,7 +2,8 @@
   "mcpServers": {
     "corsoul": {
       "command": "npx",
-      "args": ["-y", "--package=corsoul@0.1.19", "corsoul"]
+      "args": ["-y", "--package=corsoul@0.1.20", "corsoul"],
+      "env": { "CORTEX_MCP_SOURCE": "claude-code" }
     }
   }
 }
